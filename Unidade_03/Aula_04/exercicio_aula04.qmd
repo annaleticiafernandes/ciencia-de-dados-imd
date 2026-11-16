@@ -1,0 +1,379 @@
+---
+title: "Aula Prática 04 — Análise de Vendas em R"
+format:
+  html:
+    embed-resources: true
+---
+
+1. Carregamento e preparação dos dados
+
+Essa aula troca de ferramenta mas não de dataset: o mesmo `online_retail.xlsx` das Aulas 2 e 3, agora lido em R. Calculo as mesmas duas colunas derivadas de antes, `revenue` e `is_cancelled`, pra poder comparar os números com o que já tinha achado em Python.
+
+```{r}
+#| message: false
+library(readxl)
+library(tidyverse)
+library(lubridate)
+
+data_path <- file.path("..", "data", "online_retail.xlsx")
+
+retail <- read_excel(data_path) |>
+  rename(
+    invoice_no = InvoiceNo,
+    stock_code = StockCode,
+    description = Description,
+    quantity = Quantity,
+    invoice_date = InvoiceDate,
+    unit_price = UnitPrice,
+    customer_id = CustomerID,
+    country = Country
+  ) |>
+  mutate(
+    invoice_date = as.POSIXct(invoice_date),
+    revenue = quantity * unit_price,
+    is_cancelled = str_starts(str_to_upper(invoice_no), "C")
+  )
+
+cat(
+  "Arquivo carregado com sucesso.\n",
+  glue::glue("Dimensão da base: {nrow(retail)} linhas x {ncol(retail)} colunas\n"),
+  sep = ""
+)
+```
+
+2. Visão geral da base
+
+```{r}
+glimpse(retail)
+retail |> slice_head(n = 6)
+retail |> select(quantity, unit_price, revenue) |> summary()
+```
+
+541.909 linhas e 10 colunas, as mesmas da Aula 3 (nas duas contas eu somei `revenue` e `is_cancelled` às 8 colunas originais). O `summary()` do R mostra a mesma coisa que o `describe()` do pandas já tinha mostrado: mínimo de quantidade e preço negativos, e um máximo de quantidade muito acima do terceiro quartil.
+
+3. Análise de qualidade dos dados
+
+```{r}
+quality <- tibble(
+  coluna = names(retail),
+  valores_ausentes = map_int(retail, \(column) sum(is.na(column))),
+  percentual_ausente = map_dbl(retail, \(column) mean(is.na(column)) * 100)
+) |>
+  arrange(desc(percentual_ausente)) |>
+  mutate(percentual_ausente = round(percentual_ausente, 2))
+
+quality
+```
+
+```{r}
+original_columns <- c(
+  "invoice_no", "stock_code", "description", "quantity",
+  "invoice_date", "unit_price", "customer_id", "country"
+)
+
+duplicate_count <- retail |>
+  select(all_of(original_columns)) |>
+  duplicated() |>
+  sum()
+
+cat(glue::glue(
+  "Linhas exatamente duplicadas: {scales::comma(duplicate_count)}\n",
+  "Percentual de duplicatas: {scales::number(duplicate_count / nrow(retail), accuracy = 0.0001, scale = 100, suffix = '%')}\n"
+))
+```
+
+```{r}
+issues <- tibble(
+  metrica = c(
+    "Faturas canceladas", "Quantidade negativa", "Quantidade igual a zero",
+    "Preço negativo", "Preço igual a zero", "Descrição ausente",
+    "Cliente não identificado", "Data inválida ou ausente"
+  ),
+  quantidade = c(
+    sum(retail$is_cancelled),
+    sum(retail$quantity < 0),
+    sum(retail$quantity == 0),
+    sum(retail$unit_price < 0),
+    sum(retail$unit_price == 0),
+    sum(is.na(retail$description)),
+    sum(is.na(retail$customer_id)),
+    sum(is.na(retail$invoice_date))
+  )
+)
+
+issues
+```
+
+Os números batem exatamente com a Aula 3: 135.080 clientes não identificados, 5.268 duplicatas, 10.624 linhas de quantidade negativa. Faz sentido, é o mesmo arquivo, só a ferramenta mudou. O que muda aqui é só o jeito de contar: "Faturas canceladas" nessa tabela é 9.288 **linhas**, não faturas distintas, a mesma ressalva que já tinha feito em Python.
+
+```{r}
+percentiles <- c(0.01, 0.25, 0.50, 0.75, 0.99)
+
+retail |>
+  summarise(
+    quantidade = list(round(quantile(quantity, percentiles, na.rm = TRUE), 2)),
+    preco_unitario = list(round(quantile(unit_price, percentiles, na.rm = TRUE), 2))
+  ) |>
+  pivot_longer(everything(), names_to = "variavel", values_to = "valores") |>
+  unnest_wider(valores, names_sep = "_")
+```
+
+Mesma distância gigantesca entre o percentil 99 e o máximo que já tinha visto: isso não é peculiaridade do pandas, é o dado mesmo.
+
+4. Isolamento de vendas válidas
+
+```{r}
+sales <- retail |>
+  filter(!is_cancelled, quantity > 0, unit_price > 0)
+
+sales_summary <- sales |>
+  summarise(
+    linhas = n(),
+    pedidos = n_distinct(invoice_no),
+    clientes = n_distinct(customer_id, na.rm = TRUE),
+    unidades = sum(quantity),
+    faturamento_bruto = sum(revenue)
+  )
+
+sales_summary
+```
+
+530.104 linhas válidas, 19.960 pedidos, 4.338 clientes, os mesmos números da Aula 3. O critério de venda válida (não cancelada, quantidade e preço positivos) é o mesmo nas duas linguagens, então o resultado tinha que bater.
+
+5. Indicadores de pedidos
+
+```{r}
+orders <- sales |>
+  group_by(invoice_no) |>
+  summarise(
+    order_date = min(invoice_date),
+    customer_id = first(customer_id),
+    country = first(country),
+    item_quantity = sum(quantity),
+    order_value = sum(revenue),
+    .groups = "drop"
+  )
+
+order_value_summary <- orders |>
+  summarise(
+    ticket_medio = mean(order_value),
+    ticket_mediano = median(order_value)
+  )
+
+order_value_summary
+```
+
+```{r}
+orders |>
+  reframe(
+    percentil = c(25, 50, 75, 90, 99),
+    valor_pedido = round(quantile(order_value, percentil / 100), 2)
+  )
+```
+
+Ticket médio de £ 534,40 contra mediano de £ 303,84, a mesma distância da Aula 3. O pedido de £ 168.469,60 continua sendo o mesmo outlier de sempre.
+
+6. Análise de produtos
+
+```{r}
+products <- sales |>
+  filter(!is.na(description)) |>
+  group_by(stock_code, description) |>
+  summarise(
+    units_sold = sum(quantity),
+    revenue = sum(revenue),
+    order_count = n_distinct(invoice_no),
+    .groups = "drop"
+  )
+
+products |> slice_max(revenue, n = 10, with_ties = FALSE)
+```
+
+```{r}
+products |> slice_max(units_sold, n = 10, with_ties = FALSE)
+```
+
+```{r}
+products |> slice_max(order_count, n = 10, with_ties = FALSE)
+```
+
+Os três rankings reproduzem o que já tinha visto: "DOTCOM POSTAGE" no topo do faturamento sem ser produto de verdade, "PAPER CRAFT, LITTLE BIRDIE" no topo do volume só por causa do pedido de 80.995 unidades num pedido só, e "WHITE HANGING HEART T-LIGHT HOLDER" liderando por frequência de pedidos, que continua sendo o critério mais confiável pra popularidade.
+
+7. Análise de países
+
+```{r}
+countries <- sales |>
+  group_by(country) |>
+  summarise(
+    revenue = sum(revenue),
+    order_count = n_distinct(invoice_no),
+    customer_count = n_distinct(customer_id, na.rm = TRUE),
+    units_sold = sum(quantity),
+    .groups = "drop"
+  )
+
+top_countries <- countries |>
+  slice_max(revenue, n = 10, with_ties = FALSE)
+
+top_countries
+```
+
+Reino Unido de novo com £ 9.025.222, e a Holanda em segundo com só 9 clientes.
+
+8. Análise de clientes
+
+```{r}
+identified_sales <- sales |>
+  filter(!is.na(customer_id))
+
+customers <- identified_sales |>
+  group_by(customer_id) |>
+  summarise(
+    revenue = sum(revenue),
+    order_count = n_distinct(invoice_no),
+    units_sold = sum(quantity),
+    country = first(country),
+    .groups = "drop"
+  )
+
+top_customers <- customers |>
+  slice_max(revenue, n = 10, with_ties = FALSE)
+
+top_customers
+```
+
+O cliente 14646, da Holanda, confirma ser o mesmo de sempre: £ 280.206 em 73 pedidos, explicando praticamente sozinho a posição do país no ranking anterior.
+
+9. Cancelamentos e devoluções
+
+```{r}
+cancellations <- retail |>
+  filter(is_cancelled | quantity < 0)
+
+cancellation_summary <- retail |>
+  summarise(
+    faturas_canceladas = n_distinct(invoice_no[is_cancelled]),
+    linhas_quantidade_negativa = sum(quantity < 0),
+    valor_devolucoes_ajustes = abs(sum(revenue[revenue < 0])),
+    receita_liquida = sum(revenue)
+  )
+
+cancellation_summary
+```
+
+3.836 faturas canceladas de verdade (contando cada uma uma vez), £ 918.937 em devoluções/ajustes, receita líquida de £ 9.747.748. Tudo igual à Aula 3, como era de se esperar.
+
+10. Análises adicionais: produtos por trimestre no Reino Unido
+
+Essa parte é nova, não tinha feito em Python. Quebro o top 5 produtos por volume em cada trimestre, só pro Reino Unido, já que é 90% da base.
+
+```{r}
+uk_quarterly_top_products <- sales |>
+  filter(country == "United Kingdom") |>
+  mutate(quarter = paste0(year(invoice_date), "-Q", quarter(invoice_date))) |>
+  group_by(quarter, stock_code, description) |>
+  summarise(
+    units_sold = sum(quantity),
+    revenue = sum(revenue),
+    .groups = "drop"
+  ) |>
+  slice_max(units_sold, n = 5, by = quarter, with_ties = FALSE) |>
+  arrange(quarter, desc(units_sold))
+
+uk_quarterly_top_products
+```
+
+O produto "MEDIUM CERAMIC TOP STORAGE JAR" aparece como líder isolado no 2011-Q1 com 74.215 unidades, é o mesmo pedido gigante do cliente 12346 que já tinha achado antes, só que agora localizado num trimestre específico. Tirando esse pico, "WORLD WAR 2 GLIDERS ASSTD DESIGNS" e "WHITE HANGING HEART T-LIGHT HOLDER" aparecem repetidamente entre os cinco mais vendidos em quase todos os trimestres, esses sim parecem best-sellers de catálogo, não picos isolados.
+
+11. Concentração de receita
+
+```{r}
+customer_revenue <- customers |>
+  select(customer_id, revenue) |>
+  arrange(desc(revenue)) |>
+  mutate(
+    customer_rank = row_number(),
+    cumulative_share = cumsum(revenue) / sum(revenue)
+  )
+
+customers_for_80pct <- customer_revenue |>
+  filter(cumulative_share >= 0.8) |>
+  slice_head(n = 1) |>
+  pull(customer_rank)
+
+total_customers <- nrow(customer_revenue)
+
+cat(glue::glue(
+  "{customers_for_80pct} de {total_customers} clientes ",
+  "({scales::percent(customers_for_80pct / total_customers, accuracy = 0.1)}) ",
+  "respondem por 80% do faturamento das vendas válidas.\n"
+))
+
+customer_revenue |>
+  slice_head(n = 10)
+```
+
+1.133 de 4.338 clientes (26,1%) respondem por 80% do faturamento. Não é a regra 80/20 clássica, é mais distribuído do que isso, mas ainda assim uma concentração grande: um quarto da base de clientes carrega quatro quintos da receita.
+
+12. Sazonalidade por dia da semana
+
+```{r}
+weekday_revenue <- sales |>
+  mutate(weekday = wday(invoice_date, label = TRUE, abbr = FALSE, week_start = 1)) |>
+  group_by(weekday) |>
+  summarise(
+    orders = n_distinct(invoice_no),
+    revenue = sum(revenue),
+    avg_revenue_per_order = revenue / orders,
+    .groups = "drop"
+  ) |>
+  arrange(weekday)
+
+weekday_revenue
+```
+
+A tabela só tem seis linhas, não sete. Sábado não aparece porque não tem nenhuma venda registrada nesse dia, zero linhas, não é um valor baixo, é ausência completa. Isso é compatível com uma operação majoritariamente B2B/atacado que simplesmente não processa pedido aos sábados. Quinta-feira é o dia de maior faturamento (£ 2.203.161) e domingo o menor (£ 813.828), com bem menos pedidos que os dias úteis.
+
+13. Para casa: sazonalidade mensal, outliers e recomendações
+
+Evolução mensal de faturamento, usando as mesmas vendas válidas.
+
+```{r}
+monthly <- sales |>
+  mutate(month = format(invoice_date, "%Y-%m")) |>
+  group_by(month) |>
+  summarise(revenue = sum(revenue), orders = n_distinct(invoice_no), .groups = "drop") |>
+  arrange(month)
+
+monthly
+```
+
+O mesmo padrão de crescimento de setembro a novembro de 2011 que já tinha visto em Python (novembro fecha em £ 1.509.496, o maior mês da base), e o mesmo cuidado de leitura: dezembro de 2011 aparece baixo (£ 638.793) só porque o dataset corta no dia 9, não porque as vendas caíram.
+
+```{r}
+bulk_orders <- sales |>
+  slice_max(quantity, n = 10, with_ties = FALSE) |>
+  select(invoice_no, stock_code, description, quantity, unit_price, revenue, customer_id, country)
+
+bulk_orders
+```
+
+Mesma lista de pedidos extremos da Aula 3, encabeçada pelo mesmo pedido de 80.995 unidades do cliente 16446. Ver isso de novo numa ferramenta diferente reforça que não é bug de uma biblioteca específica, o outlier está no dado.
+
+Critérios de venda válida, cancelamento e anomalia, comparando com a Aula 3: usei exatamente o mesmo critério de venda válida das duas vezes (não cancelada, quantidade e preço positivos), e os números batem linha por linha, o que já era esperado porque é o mesmo dataset e o mesmo filtro escrito em duas linguagens. A única diferença de abordagem foi que em R eu también quebrei por trimestre (seção 10) e por dia da semana (seção 12), dois ângulos que não tinha explorado em Python. Isso não muda o critério de venda válida em si, só mostra outros jeitos de fatiar o mesmo recorte.
+
+Recomendações, com base nos números desta aula:
+
+A primeira é a mesma da Aula 3 e continua valendo: separar um canal B2B pros grandes compradores como o cliente 14646, que sozinho é 3,1% do faturamento de vendas válidas.
+
+A segunda é nova: investigar por que não há vendas aos sábados. Se for decisão operacional (loja ou centro de distribuição fechado), tudo bem, mas se for perda de pedido por algum motivo técnico, isso é receita ficando na mesa toda semana.
+
+A terceira é usar a concentração de receita (seção 11) pra priorizar atendimento: 1.133 clientes respondem por 80% do faturamento, então um programa de relacionamento ou suporte prioritário pra esse grupo tem retorno desproporcional comparado a tratar todos os 4.338 clientes da mesma forma.
+
+Rodei "Restart R and Run All Chunks" (via `quarto render`) antes de considerar este documento pronto: todos os blocos executaram em sequência, do início ao fim, sem erro.
+
+## Conclusão
+
+Essa aula não trouxe diagnóstico novo, ela testou o mesmo diagnóstico da Aula 3 numa ferramenta diferente. Os números bateram em tudo que comparei, o que é uma boa notícia: o resultado da Aula 3 não dependia de alguma peculiaridade do pandas. R trouxe dois ângulos que não tinha explorado antes (trimestre e dia da semana), e o achado mais concreto da aula foi a ausência total de vendas aos sábados, que só apareceu porque olhei por esse recorte.
+
+> Observação: este documento depende do `online_retail.xlsx` baixado na Aula 2 e dos pacotes `tidyverse`, `readxl`, `lubridate`, `glue` e `scales`, instalados nesta aula especificamente pra rodar R (as Aulas 1 a 3 usavam só Python/pandas).
