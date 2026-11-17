@@ -5,7 +5,7 @@ format:
     embed-resources: true
 ---
 
-1. Carregamento e preparação dos dados
+## 1. Carregamento e preparação dos dados
 
 Essa aula troca de ferramenta mas não de dataset: o mesmo `online_retail.xlsx` das Aulas 2 e 3, agora lido em R. Calculo as mesmas duas colunas derivadas de antes, `revenue` e `is_cancelled`, pra poder comparar os números com o que já tinha achado em Python.
 
@@ -41,7 +41,7 @@ cat(
 )
 ```
 
-2. Visão geral da base
+## 2. Visão geral da base
 
 ```{r}
 glimpse(retail)
@@ -51,7 +51,7 @@ retail |> select(quantity, unit_price, revenue) |> summary()
 
 541.909 linhas e 10 colunas, as mesmas da Aula 3 (nas duas contas eu somei `revenue` e `is_cancelled` às 8 colunas originais). O `summary()` do R mostra a mesma coisa que o `describe()` do pandas já tinha mostrado: mínimo de quantidade e preço negativos, e um máximo de quantidade muito acima do terceiro quartil.
 
-3. Análise de qualidade dos dados
+## 3. Análise de qualidade dos dados
 
 ```{r}
 quality <- tibble(
@@ -120,7 +120,7 @@ retail |>
 
 Mesma distância gigantesca entre o percentil 99 e o máximo que já tinha visto: isso não é peculiaridade do pandas, é o dado mesmo.
 
-4. Isolamento de vendas válidas
+## 4. Isolamento de vendas válidas
 
 ```{r}
 sales <- retail |>
@@ -140,7 +140,7 @@ sales_summary
 
 530.104 linhas válidas, 19.960 pedidos, 4.338 clientes, os mesmos números da Aula 3. O critério de venda válida (não cancelada, quantidade e preço positivos) é o mesmo nas duas linguagens, então o resultado tinha que bater.
 
-5. Indicadores de pedidos
+## 5. Indicadores de pedidos
 
 ```{r}
 orders <- sales |>
@@ -173,7 +173,7 @@ orders |>
 
 Ticket médio de £ 534,40 contra mediano de £ 303,84, a mesma distância da Aula 3. O pedido de £ 168.469,60 continua sendo o mesmo outlier de sempre.
 
-6. Análise de produtos
+## 6. Análise de produtos
 
 ```{r}
 products <- sales |>
@@ -199,7 +199,7 @@ products |> slice_max(order_count, n = 10, with_ties = FALSE)
 
 Os três rankings reproduzem o que já tinha visto: "DOTCOM POSTAGE" no topo do faturamento sem ser produto de verdade, "PAPER CRAFT, LITTLE BIRDIE" no topo do volume só por causa do pedido de 80.995 unidades num pedido só, e "WHITE HANGING HEART T-LIGHT HOLDER" liderando por frequência de pedidos, que continua sendo o critério mais confiável pra popularidade.
 
-7. Análise de países
+## 7. Análise de países
 
 ```{r}
 countries <- sales |>
@@ -220,7 +220,7 @@ top_countries
 
 Reino Unido de novo com £ 9.025.222, e a Holanda em segundo com só 9 clientes.
 
-8. Análise de clientes
+## 8. Análise de clientes
 
 ```{r}
 identified_sales <- sales |>
@@ -244,7 +244,7 @@ top_customers
 
 O cliente 14646, da Holanda, confirma ser o mesmo de sempre: £ 280.206 em 73 pedidos, explicando praticamente sozinho a posição do país no ranking anterior.
 
-9. Cancelamentos e devoluções
+## 9. Cancelamentos e devoluções
 
 ```{r}
 cancellations <- retail |>
@@ -263,7 +263,7 @@ cancellation_summary
 
 3.836 faturas canceladas de verdade (contando cada uma uma vez), £ 918.937 em devoluções/ajustes, receita líquida de £ 9.747.748. Tudo igual à Aula 3, como era de se esperar.
 
-10. Análises adicionais: produtos por trimestre no Reino Unido
+## 10. Análises adicionais: produtos por trimestre no Reino Unido
 
 Essa parte é nova, não tinha feito em Python. Quebro o top 5 produtos por volume em cada trimestre, só pro Reino Unido, já que é 90% da base.
 
@@ -285,7 +285,7 @@ uk_quarterly_top_products
 
 O produto "MEDIUM CERAMIC TOP STORAGE JAR" aparece como líder isolado no 2011-Q1 com 74.215 unidades, é o mesmo pedido gigante do cliente 12346 que já tinha achado antes, só que agora localizado num trimestre específico. Tirando esse pico, "WORLD WAR 2 GLIDERS ASSTD DESIGNS" e "WHITE HANGING HEART T-LIGHT HOLDER" aparecem repetidamente entre os cinco mais vendidos em quase todos os trimestres, esses sim parecem best-sellers de catálogo, não picos isolados.
 
-11. Concentração de receita
+## 11. Concentração de receita
 
 ```{r}
 customer_revenue <- customers |>
@@ -315,7 +315,7 @@ customer_revenue |>
 
 1.133 de 4.338 clientes (26,1%) respondem por 80% do faturamento. Não é a regra 80/20 clássica, é mais distribuído do que isso, mas ainda assim uma concentração grande: um quarto da base de clientes carrega quatro quintos da receita.
 
-12. Sazonalidade por dia da semana
+## 12. Sazonalidade por dia da semana
 
 ```{r}
 weekday_revenue <- sales |>
@@ -334,7 +334,7 @@ weekday_revenue
 
 A tabela só tem seis linhas, não sete. Sábado não aparece porque não tem nenhuma venda registrada nesse dia, zero linhas, não é um valor baixo, é ausência completa. Isso é compatível com uma operação majoritariamente B2B/atacado que simplesmente não processa pedido aos sábados. Quinta-feira é o dia de maior faturamento (£ 2.203.161) e domingo o menor (£ 813.828), com bem menos pedidos que os dias úteis.
 
-13. Para casa: sazonalidade mensal, outliers e recomendações
+## 13. Para casa: sazonalidade mensal, outliers e recomendações
 
 Evolução mensal de faturamento, usando as mesmas vendas válidas.
 

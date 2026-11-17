@@ -2228,9 +2228,8 @@ vertical-align: -.125em;
 </header>
 
 
-<ol type="1">
-<li>Carregamento e preparação dos dados</li>
-</ol>
+<section id="carregamento-e-preparação-dos-dados" class="level2">
+<h2 class="anchored" data-anchor-id="carregamento-e-preparação-dos-dados">1. Carregamento e preparação dos dados</h2>
 <p>Essa aula troca de ferramenta mas não de dataset: o mesmo <code>online_retail.xlsx</code> das Aulas 2 e 3, agora lido em R. Calculo as mesmas duas colunas derivadas de antes, <code>revenue</code> e <code>is_cancelled</code>, pra poder comparar os números com o que já tinha achado em Python.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readxl)</span>
@@ -2266,9 +2265,9 @@ vertical-align: -.125em;
 Dimensão da base: 541909 linhas x 10 colunas</code></pre>
 </div>
 </div>
-<ol start="2" type="1">
-<li>Visão geral da base</li>
-</ol>
+</section>
+<section id="visão-geral-da-base" class="level2">
+<h2 class="anchored" data-anchor-id="visão-geral-da-base">2. Visão geral da base</h2>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(retail)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
@@ -2311,9 +2310,9 @@ $ is_cancelled &lt;lgl&gt; FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALS
 </div>
 </div>
 <p>541.909 linhas e 10 colunas, as mesmas da Aula 3 (nas duas contas eu somei <code>revenue</code> e <code>is_cancelled</code> às 8 colunas originais). O <code>summary()</code> do R mostra a mesma coisa que o <code>describe()</code> do pandas já tinha mostrado: mínimo de quantidade e preço negativos, e um máximo de quantidade muito acima do terceiro quartil.</p>
-<ol start="3" type="1">
-<li>Análise de qualidade dos dados</li>
-</ol>
+</section>
+<section id="análise-de-qualidade-dos-dados" class="level2">
+<h2 class="anchored" data-anchor-id="análise-de-qualidade-dos-dados">3. Análise de qualidade dos dados</h2>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>quality <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">coluna =</span> <span class="fu">names</span>(retail),</span>
@@ -2414,9 +2413,9 @@ Percentual de duplicatas: 0.9721%</code></pre>
 </div>
 </div>
 <p>Mesma distância gigantesca entre o percentil 99 e o máximo que já tinha visto: isso não é peculiaridade do pandas, é o dado mesmo.</p>
-<ol start="4" type="1">
-<li>Isolamento de vendas válidas</li>
-</ol>
+</section>
+<section id="isolamento-de-vendas-válidas" class="level2">
+<h2 class="anchored" data-anchor-id="isolamento-de-vendas-válidas">4. Isolamento de vendas válidas</h2>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>sales <span class="ot">&lt;-</span> retail <span class="sc">|&gt;</span></span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span>is_cancelled, quantity <span class="sc">&gt;</span> <span class="dv">0</span>, unit_price <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
@@ -2439,9 +2438,9 @@ Percentual de duplicatas: 0.9721%</code></pre>
 </div>
 </div>
 <p>530.104 linhas válidas, 19.960 pedidos, 4.338 clientes, os mesmos números da Aula 3. O critério de venda válida (não cancelada, quantidade e preço positivos) é o mesmo nas duas linguagens, então o resultado tinha que bater.</p>
-<ol start="5" type="1">
-<li>Indicadores de pedidos</li>
-</ol>
+</section>
+<section id="indicadores-de-pedidos" class="level2">
+<h2 class="anchored" data-anchor-id="indicadores-de-pedidos">5. Indicadores de pedidos</h2>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>orders <span class="ot">&lt;-</span> sales <span class="sc">|&gt;</span></span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(invoice_no) <span class="sc">|&gt;</span></span>
@@ -2486,9 +2485,9 @@ Percentual de duplicatas: 0.9721%</code></pre>
 </div>
 </div>
 <p>Ticket médio de £ 534,40 contra mediano de £ 303,84, a mesma distância da Aula 3. O pedido de £ 168.469,60 continua sendo o mesmo outlier de sempre.</p>
-<ol start="6" type="1">
-<li>Análise de produtos</li>
-</ol>
+</section>
+<section id="análise-de-produtos" class="level2">
+<h2 class="anchored" data-anchor-id="análise-de-produtos">6. Análise de produtos</h2>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>products <span class="ot">&lt;-</span> sales <span class="sc">|&gt;</span></span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(description)) <span class="sc">|&gt;</span></span>
@@ -2554,9 +2553,9 @@ Percentual de duplicatas: 0.9721%</code></pre>
 </div>
 </div>
 <p>Os três rankings reproduzem o que já tinha visto: “DOTCOM POSTAGE” no topo do faturamento sem ser produto de verdade, “PAPER CRAFT, LITTLE BIRDIE” no topo do volume só por causa do pedido de 80.995 unidades num pedido só, e “WHITE HANGING HEART T-LIGHT HOLDER” liderando por frequência de pedidos, que continua sendo o critério mais confiável pra popularidade.</p>
-<ol start="7" type="1">
-<li>Análise de países</li>
-</ol>
+</section>
+<section id="análise-de-países" class="level2">
+<h2 class="anchored" data-anchor-id="análise-de-países">7. Análise de países</h2>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>countries <span class="ot">&lt;-</span> sales <span class="sc">|&gt;</span></span>
 <span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(country) <span class="sc">|&gt;</span></span>
@@ -2589,9 +2588,9 @@ Percentual de duplicatas: 0.9721%</code></pre>
 </div>
 </div>
 <p>Reino Unido de novo com £ 9.025.222, e a Holanda em segundo com só 9 clientes.</p>
-<ol start="8" type="1">
-<li>Análise de clientes</li>
-</ol>
+</section>
+<section id="análise-de-clientes" class="level2">
+<h2 class="anchored" data-anchor-id="análise-de-clientes">8. Análise de clientes</h2>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>identified_sales <span class="ot">&lt;-</span> sales <span class="sc">|&gt;</span></span>
 <span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(customer_id))</span>
@@ -2627,9 +2626,9 @@ Percentual de duplicatas: 0.9721%</code></pre>
 </div>
 </div>
 <p>O cliente 14646, da Holanda, confirma ser o mesmo de sempre: £ 280.206 em 73 pedidos, explicando praticamente sozinho a posição do país no ranking anterior.</p>
-<ol start="9" type="1">
-<li>Cancelamentos e devoluções</li>
-</ol>
+</section>
+<section id="cancelamentos-e-devoluções" class="level2">
+<h2 class="anchored" data-anchor-id="cancelamentos-e-devoluções">9. Cancelamentos e devoluções</h2>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>cancellations <span class="ot">&lt;-</span> retail <span class="sc">|&gt;</span></span>
 <span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(is_cancelled <span class="sc">|</span> quantity <span class="sc">&lt;</span> <span class="dv">0</span>)</span>
@@ -2652,9 +2651,9 @@ Percentual de duplicatas: 0.9721%</code></pre>
 </div>
 </div>
 <p>3.836 faturas canceladas de verdade (contando cada uma uma vez), £ 918.937 em devoluções/ajustes, receita líquida de £ 9.747.748. Tudo igual à Aula 3, como era de se esperar.</p>
-<ol start="10" type="1">
-<li>Análises adicionais: produtos por trimestre no Reino Unido</li>
-</ol>
+</section>
+<section id="análises-adicionais-produtos-por-trimestre-no-reino-unido" class="level2">
+<h2 class="anchored" data-anchor-id="análises-adicionais-produtos-por-trimestre-no-reino-unido">10. Análises adicionais: produtos por trimestre no Reino Unido</h2>
 <p>Essa parte é nova, não tinha feito em Python. Quebro o top 5 produtos por volume em cada trimestre, só pro Reino Unido, já que é 90% da base.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>uk_quarterly_top_products <span class="ot">&lt;-</span> sales <span class="sc">|&gt;</span></span>
@@ -2688,9 +2687,9 @@ Percentual de duplicatas: 0.9721%</code></pre>
 </div>
 </div>
 <p>O produto “MEDIUM CERAMIC TOP STORAGE JAR” aparece como líder isolado no 2011-Q1 com 74.215 unidades, é o mesmo pedido gigante do cliente 12346 que já tinha achado antes, só que agora localizado num trimestre específico. Tirando esse pico, “WORLD WAR 2 GLIDERS ASSTD DESIGNS” e “WHITE HANGING HEART T-LIGHT HOLDER” aparecem repetidamente entre os cinco mais vendidos em quase todos os trimestres, esses sim parecem best-sellers de catálogo, não picos isolados.</p>
-<ol start="11" type="1">
-<li>Concentração de receita</li>
-</ol>
+</section>
+<section id="concentração-de-receita" class="level2">
+<h2 class="anchored" data-anchor-id="concentração-de-receita">11. Concentração de receita</h2>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>customer_revenue <span class="ot">&lt;-</span> customers <span class="sc">|&gt;</span></span>
 <span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(customer_id, revenue) <span class="sc">|&gt;</span></span>
@@ -2734,9 +2733,9 @@ Percentual de duplicatas: 0.9721%</code></pre>
 </div>
 </div>
 <p>1.133 de 4.338 clientes (26,1%) respondem por 80% do faturamento. Não é a regra 80/20 clássica, é mais distribuído do que isso, mas ainda assim uma concentração grande: um quarto da base de clientes carrega quatro quintos da receita.</p>
-<ol start="12" type="1">
-<li>Sazonalidade por dia da semana</li>
-</ol>
+</section>
+<section id="sazonalidade-por-dia-da-semana" class="level2">
+<h2 class="anchored" data-anchor-id="sazonalidade-por-dia-da-semana">12. Sazonalidade por dia da semana</h2>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>weekday_revenue <span class="ot">&lt;-</span> sales <span class="sc">|&gt;</span></span>
 <span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">weekday =</span> <span class="fu">wday</span>(invoice_date, <span class="at">label =</span> <span class="cn">TRUE</span>, <span class="at">abbr =</span> <span class="cn">FALSE</span>, <span class="at">week_start =</span> <span class="dv">1</span>)) <span class="sc">|&gt;</span></span>
@@ -2763,9 +2762,9 @@ Percentual de duplicatas: 0.9721%</code></pre>
 </div>
 </div>
 <p>A tabela só tem seis linhas, não sete. Sábado não aparece porque não tem nenhuma venda registrada nesse dia, zero linhas, não é um valor baixo, é ausência completa. Isso é compatível com uma operação majoritariamente B2B/atacado que simplesmente não processa pedido aos sábados. Quinta-feira é o dia de maior faturamento (£ 2.203.161) e domingo o menor (£ 813.828), com bem menos pedidos que os dias úteis.</p>
-<ol start="13" type="1">
-<li>Para casa: sazonalidade mensal, outliers e recomendações</li>
-</ol>
+</section>
+<section id="para-casa-sazonalidade-mensal-outliers-e-recomendações" class="level2">
+<h2 class="anchored" data-anchor-id="para-casa-sazonalidade-mensal-outliers-e-recomendações">13. Para casa: sazonalidade mensal, outliers e recomendações</h2>
 <p>Evolução mensal de faturamento, usando as mesmas vendas válidas.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>monthly <span class="ot">&lt;-</span> sales <span class="sc">|&gt;</span></span>
@@ -2825,6 +2824,7 @@ Percentual de duplicatas: 0.9721%</code></pre>
 <p>A segunda é nova: investigar por que não há vendas aos sábados. Se for decisão operacional (loja ou centro de distribuição fechado), tudo bem, mas se for perda de pedido por algum motivo técnico, isso é receita ficando na mesa toda semana.</p>
 <p>A terceira é usar a concentração de receita (seção 11) pra priorizar atendimento: 1.133 clientes respondem por 80% do faturamento, então um programa de relacionamento ou suporte prioritário pra esse grupo tem retorno desproporcional comparado a tratar todos os 4.338 clientes da mesma forma.</p>
 <p>Rodei “Restart R and Run All Chunks” (via <code>quarto render</code>) antes de considerar este documento pronto: todos os blocos executaram em sequência, do início ao fim, sem erro.</p>
+</section>
 <section id="conclusão" class="level2">
 <h2 class="anchored" data-anchor-id="conclusão">Conclusão</h2>
 <p>Essa aula não trouxe diagnóstico novo, ela testou o mesmo diagnóstico da Aula 3 numa ferramenta diferente. Os números bateram em tudo que comparei, o que é uma boa notícia: o resultado da Aula 3 não dependia de alguma peculiaridade do pandas. R trouxe dois ângulos que não tinha explorado antes (trimestre e dia da semana), e o achado mais concreto da aula foi a ausência total de vendas aos sábados, que só apareceu porque olhei por esse recorte.</p>
