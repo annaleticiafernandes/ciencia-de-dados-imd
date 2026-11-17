@@ -15,7 +15,7 @@ library(readxl)
 library(tidyverse)
 library(lubridate)
 
-data_path <- file.path("..", "data", "online_retail.xlsx")
+data_path <- file.path("..", "..", "data", "online_retail.xlsx")
 
 retail <- read_excel(data_path) |>
   rename(
